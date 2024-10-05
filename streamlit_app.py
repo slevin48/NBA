@@ -2,7 +2,7 @@ import streamlit as st
 from nba_api.stats.endpoints import scoreboard, teamdetails, commonplayerinfo, teamyearbyyearstats, commonteamroster, playercareerstats
 from nba_api.stats.static import teams, players
 import requests
-from requests.exceptions import TooManyRedirects
+from requests.exceptions import ReadTimeout, TooManyRedirects
 import time
 import pandas as pd
 
@@ -11,15 +11,17 @@ st.set_page_config(page_title="NBA Data App", page_icon="🏀")
 @st.cache_data(ttl=3600)  # Cache data for 1 hour
 def fetch_data(endpoint, **kwargs):
     max_retries = 3
+    retry_delay = 5  # seconds
+    
     for i in range(max_retries):
         try:
             return endpoint(**kwargs).get_data_frames()[0]
-        except TooManyRedirects:
+        except (ReadTimeout, TooManyRedirects) as e:
             if i < max_retries - 1:
-                st.warning(f"Too many redirects, retrying in 5 seconds... (Attempt {i+1}/{max_retries})")
-                time.sleep(5)
+                st.warning(f"Request failed, retrying in {retry_delay} seconds... (Attempt {i+1}/{max_retries})")
+                time.sleep(retry_delay)
             else:
-                st.error("Failed to fetch data after multiple attempts. Please try again later.")
+                st.error(f"Failed to fetch data after {max_retries} attempts. Please try again later.")
                 return None
 
 def main():
