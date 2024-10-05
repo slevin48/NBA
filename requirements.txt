@@ -1,4 +1,4 @@
 nba_api
 streamlit
 pandas
-
+requests
