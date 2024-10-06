@@ -10,3 +10,5 @@ https://basketboule.streamlit.app/
 - [NBA API](https://github.com/swar/nba_api)
 - [How to make NBA Shot Charts](https://www.youtube.com/watch?v=a3u-3gEYvxM)
 - [Excel - Create an NBA Shot Chart Using Python & Copilot](https://www.youtube.com/watch?v=HvH7t6ejCFs)
+- [How to Create NBA Shot Charts in Python](http://savvastjortjoglou.com/nba-shot-sharts.html)
+- [Plotting with Python play-by-play data of NBA Games (2015–2021)](https://medium.com/@eduardo.garcia.sv/plotting-with-python-play-by-play-data-of-nba-games-2015-2021-ed763b888514)
