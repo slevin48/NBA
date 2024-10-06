@@ -8,6 +8,7 @@ https://basketboule.streamlit.app/
 
 ## Resources:
 - [NBA API](https://github.com/swar/nba_api)
+- [RAPID API-NBA](https://rapidapi.com/api-sports/api/api-nba)
 - [How to make NBA Shot Charts](https://www.youtube.com/watch?v=a3u-3gEYvxM)
 - [Excel - Create an NBA Shot Chart Using Python & Copilot](https://www.youtube.com/watch?v=HvH7t6ejCFs)
 - [How to Create NBA Shot Charts in Python](http://savvastjortjoglou.com/nba-shot-sharts.html)
