@@ -1,9 +1,14 @@
-# Basketball Betting App 🏀
+# Basketboule 🏀
+## NBA stats app
 
  [![Open in Streamlit](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://basketboule.streamlit.app/)
  
 https://basketboule.streamlit.app/
 
+## V1
+[streamlit-streamlit_app-2024-10-06-10-10-65.webm](https://github.com/user-attachments/assets/667b6fed-d679-44df-bd9d-a2acf98a4112)
+
+## V0
 [streamlit-streamlit_app-2024-09-23-15-09-82.webm](https://github.com/user-attachments/assets/1dc09302-d286-468b-8893-b286bc93cebb)
 
 ## Resources:
