@@ -4,7 +4,7 @@ from nba_api.live.nba.endpoints import scoreboard
 from utils import fetch_data, fetch_player_stats
 from nba_api.stats.endpoints import teamdetails, teamyearbyyearstats, commonteamroster, teamgamelog
 import pandas as pd
-import plotly.express as px
+# import plotly.express as px
 from datetime import datetime
 import re
 
