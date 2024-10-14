@@ -1,9 +1,10 @@
 import streamlit as st
 from nba_api.stats.static import teams
-from nba_api.stats.endpoints import teamdetails, teamyearbyyearstats, commonteamroster
+from nba_api.stats.endpoints import teamdetails, teamyearbyyearstats, commonteamroster, teamgamelog
 from utils import fetch_data, fetch_player_stats
 import pandas as pd
 import plotly.express as px
+from datetime import datetime
 
 st.set_page_config(
     page_title="NBA Teams", 
@@ -113,6 +114,64 @@ def show_teams():
                 st.plotly_chart(fig)
             else:
                 st.write("Historical data not available")
+
+        def display_season_games(season):
+            game_log = fetch_data(teamgamelog.TeamGameLog, team_id=team_id, season=season)
+            
+            if game_log is not None and not game_log.empty:
+                st.subheader(f"Games for the {season}-{season+1} Season")
+                # Convert GAME_DATE to datetime
+                game_log['GAME_DATE'] = pd.to_datetime(game_log['GAME_DATE'])
+                
+                # Sort games by date (most recent first)
+                game_log = game_log.sort_values('GAME_DATE', ascending=False)
+                
+                # Prepare data for display
+                games_display = game_log[['GAME_DATE', 'MATCHUP', 'WL', 'PTS']].copy()
+                games_display['GAME_DATE'] = games_display['GAME_DATE'].dt.strftime('%Y-%m-%d')
+                
+                # Extract opponent name and score from MATCHUP
+                def extract_opponent_and_score(matchup):
+                    parts = matchup.split()
+                    opponent = parts[2] if parts[1] == 'vs.' else parts[1]
+                    score = parts[-1]
+                    return pd.Series([opponent, score])
+
+                games_display[['OPPONENT', 'OPP_SCORE']] = games_display['MATCHUP'].apply(extract_opponent_and_score)
+                
+                # Create a score column
+                games_display['SCORE'] = games_display.apply(lambda row: f"{row['PTS']} - {row['OPP_SCORE']}", axis=1)
+                
+                # Highlight wins and losses
+                def highlight_result(row):
+                    if 'WL' not in row:
+                        return [''] * len(row)
+                    if row['WL'] == 'W':
+                        return ['background-color: lightgreen'] * len(row)
+                    elif row['WL'] == 'L':
+                        return ['background-color: lightcoral'] * len(row)
+                    else:
+                        return [''] * len(row)
+                
+                # Rename and select columns for display
+                games_display = games_display.rename(columns={
+                    'GAME_DATE': 'Date',
+                    'OPPONENT': 'Opponent',
+                })[['Date', 'Opponent', 'SCORE', 'WL']]  # Include 'WL' column for highlighting
+                
+                # Display the games with highlighting
+                st.dataframe(games_display.style.apply(highlight_result, axis=1), hide_index=True)
+                
+                # # Debug information
+                # st.write("Debug: Columns in games_display", games_display.columns)
+                # st.write("Debug: First few rows of games_display", games_display.head())
+            else:
+                st.write(f"Unable to fetch game schedule for the {str(season)}-{str(season+1)} season.")
+
+        current_year = datetime.now().year
+        seasons = list(range(1990, current_year+1))
+        season = st.sidebar.number_input("Select a season", min_value=min(seasons), max_value=max(seasons), value=max(seasons), key='season_numeric_input')
+        display_season_games(season)
     else:
         st.write("Please select a team to view details.")
 
