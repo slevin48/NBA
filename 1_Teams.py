@@ -127,13 +127,13 @@ def show_teams():
                 game_log = game_log.sort_values('GAME_DATE', ascending=False)
                 
                 # Prepare data for display
-                games_display = game_log[['GAME_DATE', 'MATCHUP', 'WL', 'PTS']].copy()
+                games_display = game_log[['GAME_DATE', 'MATCHUP', 'WL', 'PTS', 'Game_ID']].copy()
                 games_display['GAME_DATE'] = games_display['GAME_DATE'].dt.strftime('%Y-%m-%d')
                 
                 # Extract opponent name and score from MATCHUP
                 def extract_opponent_and_score(matchup):
                     parts = matchup.split()
-                    opponent = parts[2] if parts[1] == 'vs.' else parts[1]
+                    opponent = parts[2] if parts[1] in ['vs.', '@'] else parts[1]
                     score = parts[-1]
                     return pd.Series([opponent, score])
 
@@ -141,6 +141,14 @@ def show_teams():
                 
                 # Create a score column
                 games_display['SCORE'] = games_display.apply(lambda row: f"{row['PTS']} - {row['OPP_SCORE']}", axis=1)
+                
+                # Create NBA game link
+                def create_game_link(row):
+                    matchup = row['MATCHUP'].replace(' vs. ', '-vs-').replace(' @ ', '-vs-').lower()
+                    game_id = row['Game_ID']
+                    return f"https://www.nba.com/game/{matchup}-{game_id}"
+
+                games_display['GAME_LINK'] = games_display.apply(create_game_link, axis=1)
                 
                 # Highlight wins and losses
                 def highlight_result(row):
@@ -157,7 +165,7 @@ def show_teams():
                 games_display = games_display.rename(columns={
                     'GAME_DATE': 'Date',
                     'OPPONENT': 'Opponent',
-                })[['Date', 'Opponent', 'SCORE', 'WL']]  # Include 'WL' column for highlighting
+                })[['Date', 'Opponent', 'SCORE', 'WL', 'GAME_LINK']]  # Include 'WL' column for highlighting
                 
                 # Display the games with highlighting
                 st.dataframe(games_display.style.apply(highlight_result, axis=1), hide_index=True)
