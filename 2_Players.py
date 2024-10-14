@@ -29,7 +29,8 @@ def show_players():
         
         if player_info is not None:
             with st.sidebar.expander("Player Details"):
-                st.write(f"Team: {player_info.TEAM_NAME.iloc[0]}")
+                team_id = player_info.TEAM_ID.iloc[0]
+                st.markdown(f"Team: [{player_info.TEAM_NAME.iloc[0]}](Teams?team_id={team_id})", unsafe_allow_html=True)
                 st.write(f"Position: {player_info.POSITION.iloc[0]}")
                 st.write(f"Height: {player_info.HEIGHT.iloc[0]}")
                 st.write(f"Weight: {player_info.WEIGHT.iloc[0]}")
