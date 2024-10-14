@@ -5,7 +5,10 @@
  
 https://basketboule.streamlit.app/
 
-## V1
+## V0.2
+[streamlit-streamlit_app-2024-10-14-12-10-81.webm](https://github.com/user-attachments/assets/763426ef-e6f4-4d5b-811b-9651b3a9193d)
+
+## V0.1
 [streamlit-streamlit_app-2024-10-06-10-10-65.webm](https://github.com/user-attachments/assets/667b6fed-d679-44df-bd9d-a2acf98a4112)
 
 ## V0
