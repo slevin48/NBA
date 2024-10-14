@@ -1,9 +1,11 @@
 # Basketboule 🏀
-## NBA stats app
 
  [![Open in Streamlit](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://basketboule.streamlit.app/)
  
-https://basketboule.streamlit.app/
+https://basketboule.streamlit.app/ >> *NBA stats app*
+
+## V0.3
+[streamlit-streamlit_app-2024-10-14-19-10-64.webm](https://github.com/user-attachments/assets/bddfbc69-e7b2-49a3-81c9-30a6421fdf23)
 
 ## V0.2
 [streamlit-streamlit_app-2024-10-14-12-10-81.webm](https://github.com/user-attachments/assets/763426ef-e6f4-4d5b-811b-9651b3a9193d)
