@@ -8,7 +8,10 @@ import pandas as pd
 from datetime import datetime
 import re
 
-st.set_page_config(page_title="NBA Teams", page_icon="🏀")
+st.set_page_config(
+    page_title="NBA Teams", 
+    layout="wide",
+    page_icon="🏀")
 
 st.sidebar.header("Teams")
 
@@ -154,5 +157,5 @@ def show_teams():
         # else:
         #     st.write("Unable to fetch game schedule for the current season.")
 
-if __name__ == "__main__":
-    show_teams()
+# if __name__ == "__main__":
+show_teams()

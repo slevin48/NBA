@@ -3,7 +3,10 @@ from nba_api.stats.static import players
 from utils import fetch_data
 from nba_api.stats.endpoints import commonplayerinfo
 
-st.set_page_config(page_title="NBA Players", page_icon="🏀")
+st.set_page_config(
+    page_title="NBA Players", 
+    layout="wide",
+    page_icon="🏀")
 
 def show_players():
     st.title("NBA Players")
@@ -24,5 +27,5 @@ def show_players():
             st.write(f"Weight: {player_info.WEIGHT.iloc[0]}")
             st.write(f"Country: {player_info.COUNTRY.iloc[0]}")
 
-if __name__ == "__main__":
-    show_players()
+# if __name__ == "__main__":
+show_players()
