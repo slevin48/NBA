@@ -168,7 +168,16 @@ def show_teams():
                 })[['Date', 'Opponent', 'SCORE', 'WL', 'GAME_LINK']]  # Include 'WL' column for highlighting
                 
                 # Display the games with highlighting
-                st.dataframe(games_display.style.apply(highlight_result, axis=1), hide_index=True)
+                st.dataframe(games_display.style.apply(highlight_result, axis=1), 
+                             column_config={
+                                 "Date": st.column_config.TextColumn("Date"),
+                                "Opponent": st.column_config.TextColumn("Opponent"),
+                                "SCORE": st.column_config.TextColumn("Score"),
+                                "WL": st.column_config.TextColumn("Result"),
+                                "GAME_LINK": st.column_config.LinkColumn("Game Link")
+                            },
+                             hide_index=True)
+                
                 
                 # # Debug information
                 # st.write("Debug: Columns in games_display", games_display.columns)
