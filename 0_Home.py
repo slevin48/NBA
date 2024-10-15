@@ -1,92 +1,247 @@
+from st_supabase_connection import SupabaseConnection
 import streamlit as st
+import pandas as pd
 from nba_api.live.nba.endpoints import scoreboard
-from datetime import date
-import time
+from datetime import datetime
 
 st.set_page_config(
     page_title="Basketboule",
     page_icon="🏀",
-    layout="wide",
+    layout="centered",
     menu_items={
         'About': 'https://github.com/slevin48/NBA'
     }
 )
 
+# Initialize Supabase connection
+supabase = st.connection("supabase", type=SupabaseConnection)
 
-# Define the function to get the game for the selected date
-def get_game_for_date(selected_date, max_retries=3):
-    for _ in range(max_retries):
-        try:
-            # Convert selected_date to the required format
-            formatted_date = selected_date.strftime('%m/%d/%Y')
-            score_board = scoreboard.ScoreBoard()
-            games = score_board.games.get_dict()
-            
-            # Filter games for the selected date
-            filtered_games = [game for game in games if game['gameTimeUTC'].startswith(selected_date.strftime('%Y-%m-%d'))]
-            
-            if filtered_games:
-                return filtered_games, formatted_date
-            else:
-                return None, formatted_date
-        except Exception as e:
-            st.sidebar.warning(f"Error fetching data: {e}. Retrying...")
-            time.sleep(1)  # Wait for 1 second before retrying
+# Fetch today's NBA games
+
+# @st.cache_data(ttl=3600)  # Cache data for 1 hour
+def get_today_games():
+    today = datetime.now().date()
+    date_str = today.strftime("%Y-%m-%d")
     
-    return None, None
+    board = scoreboard.ScoreBoard()
+    games_today = board.games.get_dict()
+    
+    games = []
+    for game in games_today:
+        game_info = {
+            'Game ID': game['gameId'],
+            'Date': date_str,
+            'Home Team': game['homeTeam']['teamName'],
+            'Away Team': game['awayTeam']['teamName'],
+            'Home Team ID': str(game['homeTeam']['teamId']),
+            'Away Team ID': str(game['awayTeam']['teamId']),
+            'Home Odds': 2.0,  # Placeholder odds
+            'Away Odds': 2.0,  # Placeholder odds
+        }
+        games.append(game_info)
+    
+    return pd.DataFrame(games)
 
-def display_fallback_content():
-    st.write("We're currently unable to fetch game data. Here's some general NBA information:")
-    st.write("- The NBA was founded on June 6, 1946.")
-    st.write("- There are 30 teams in the NBA, divided into two conferences.")
-    st.write("- The NBA season typically runs from October to April, followed by playoffs.")
-    st.write("- The Boston Celtics have won the most NBA championships (17).")
+# Initialize session state for bets
+if 'bets' not in st.session_state:
+    st.session_state['bets'] = []
+
+# Initialize session state for user
+if 'user' not in st.session_state:
+    st.session_state['user'] = None
+
+games = get_today_games()
+
+# App Title
+st.title("🏀 NBA Betting App 🤑")
 
 
-# Main content
-st.write("## Welcome to Basketboule! 🏀")
-st.write("This app provides information about NBA teams and players.")
-st.write("Use the sidebar to navigate between the Teams and Players sections.")
-
-# Add calendar to sidebar
-st.sidebar.subheader("Select Date")
-selected_date = st.sidebar.date_input("Choose a date", value=date.today())
-
-st.subheader(f"Games for {selected_date.strftime('%B %d, %Y')}")
-games, game_date = get_game_for_date(selected_date)
-
-if games is not None:
-    if games:  # Check if the list is not empty
-        for game in games:
-            col1, col2, col3 = st.columns(3)
-            
-            with col1:
-                st.image(f"https://cdn.nba.com/logos/nba/{game['homeTeam']['teamId']}/global/L/logo.svg", width=100)
-                st.write(f"{game['homeTeam']['teamName']}")
-                st.write(f"Score: {game['homeTeam']['score']}")
-            
-            with col2:
-                st.write("VS")
-                game_status = game['gameStatus']
-                st.write(f"Status: {game_status}")
-            
-            with col3:
-                st.image(f"https://cdn.nba.com/logos/nba/{game['awayTeam']['teamId']}/global/L/logo.svg", width=100)
-                st.write(f"{game['awayTeam']['teamCity']} {game['awayTeam']['teamName']}")
-                st.write(f"Score: {game['awayTeam']['score']}")
-            
-            game_url = f"https://www.nba.com/game/{game['gameId']}"
-            st.markdown(f"[View game details on NBA.com]({game_url})")
-            
-            st.write("---")  # Add a separator between games
-    else:
-        st.write("No games scheduled for the selected date.")
+if games.empty:
+    st.info("There are no NBA games scheduled for today.")
 else:
-    st.error("Unable to fetch game data. Displaying fallback content.")
-    display_fallback_content()
+    # Define column configuration
+    column_config = {
+        "Date": st.column_config.DateColumn(
+            "Date",
+            help="Date",
+            width="small",
+        ),
+        "Home Logo": st.column_config.ImageColumn(
+            "Home Team",
+            help="Home Logo",
+            width="small",
+        ),
+        "Away Logo": st.column_config.ImageColumn(
+            "Away Team",
+            help="Away Logo",
+            width="small",
+        ),
+        "Home Team": st.column_config.TextColumn(
+            "Home Team",
+            help="Home Team",
+            width="small",
+        ),
+        "Away Team": st.column_config.TextColumn(
+            "Away Team",
+            help="Away Team",
+            width="small",
+        ),
+        "Home Odds": st.column_config.NumberColumn(
+            "Home Team Odds",
+            help="Odds for the home team",
+            format="%.2f",
+        ),
+        "Away Odds": st.column_config.NumberColumn(
+            "Away Team Odds",
+            help="Odds for the away team",
+            format="%.2f",
+        ),
+    }
 
-st.subheader("Features")
-st.write("- View detailed information about NBA teams")
-st.write("- Explore current season stats for teams")
-st.write("- Check out player rosters and individual stats")
-st.write("- Analyze historical team performance")
+    # Prepare the dataframe with logo URLs
+    display_df = games.copy()
+    display_df['Home Logo'] = display_df.apply(lambda row: f"https://cdn.nba.com/logos/nba/{row['Home Team ID']}/global/L/logo.svg", axis=1)
+    display_df['Away Logo'] = display_df.apply(lambda row: f"https://cdn.nba.com/logos/nba/{row['Away Team ID']}/global/L/logo.svg", axis=1)
+    # Display the dataframe
+    st.dataframe(
+        display_df[['Date', 'Home Logo', 'Away Logo', 'Home Team', 'Away Team', 'Home Odds', 'Away Odds']],
+        column_config=column_config,
+        hide_index=True,
+    )
+
+# User Authentication Section
+if st.session_state['user'] is None:
+    st.header("User Authentication")
+
+    auth_operation = st.selectbox('Operation',
+                                  ["sign_up", "sign_in_with_password", "sign_in_with_otp"])
+
+    constructed_auth_query = ""
+
+    if auth_operation == "sign_up":
+        st.write("## Create user")
+        lcol, rcol = st.columns(2)
+        email = lcol.text_input(label="Enter your email ID")
+        password = rcol.text_input(
+            label="Enter your password",
+            placeholder="Min 6 characters",
+            type="password",
+            help="Password is encrypted",
+        )
+
+        fname = lcol.text_input(
+            label="First name",
+            placeholder="Optional",
+        )
+
+        attribution = rcol.text_area(
+            label="How did you hear about us?",
+            placeholder="Optional",
+        )
+
+        constructed_auth_query = f"supabase.auth.{auth_operation}(dict({email=}, {password=}, options=dict(data=dict({fname=},{attribution=}))))"
+
+    elif auth_operation == "sign_in_with_password":
+        st.write("## Sign in")
+        lcol, rcol = st.columns(2)
+        email = lcol.text_input(label="Enter your email ID")
+        password = rcol.text_input(
+            label="Enter your password",
+            placeholder="Min 6 characters",
+            type="password",
+            help="Password is encrypted",
+        )
+
+        constructed_auth_query = f"supabase.auth.{auth_operation}(dict({email=}, {password=}))"
+
+    elif auth_operation == "sign_in_with_otp":
+        st.write("## Create user with OTP")
+        st.info("User creation not available for `sign_in_with_otp()` due to technical constraints.")
+        # if email := st.text_input(label="Enter your email ID"):
+        #     supabase.auth.sign_in_with_otp(dict(email=email))
+        # token = st.text_input("Enter OTP", type="password")
+
+    if st.button('Execute 🪄',
+                key="run_auth_query",
+                disabled=not constructed_auth_query):
+        try:
+            response = eval(constructed_auth_query)
+
+            if auth_operation == "sign_up":
+                auth_success_message = f"User created. Welcome {fname or ''} 🚀"
+            elif auth_operation == "sign_in_with_password":
+                auth_success_message = f"""Logged in. Welcome 🔓"""
+                st.session_state['user'] = response.user
+            
+            if auth_success_message:
+                st.success(auth_success_message)
+
+            if response is not None:
+                with st.expander("JSON response"):
+                    st.write(response.dict())
+
+            if st.session_state['user']:
+                st.rerun()
+
+        except Exception as e:
+            st.error(str(e), icon="❌")
+
+else:
+    st.write(f"Welcome, {st.session_state['user'].email}!")
+    if st.button("Logout"):
+        supabase.auth.sign_out()
+        st.session_state['user'] = None
+        st.rerun()
+
+    # Select a Game to Bet On
+    st.subheader("Place a Bet")
+
+    game_id = st.selectbox("Select Game", games['Game ID'], format_func=lambda x: f"{games[games['Game ID'] == x]['Home Team'].iloc[0]} vs {games[games['Game ID'] == x]['Away Team'].iloc[0]}")
+
+    selected_game = games[games['Game ID'] == game_id].iloc[0]
+    home_team = selected_game['Home Team']
+    away_team = selected_game['Away Team']
+    home_odds = selected_game['Home Odds']
+    away_odds = selected_game['Away Odds']
+
+    stake = st.number_input("Enter your stake ($)", min_value=1.0, step=1.0)
+
+    team_choice = st.radio(
+        "Choose a team to bet on:",
+        (f"{home_team} (Odds: {home_odds})", f"{away_team} (Odds: {away_odds})")
+    )
+
+    # Modify the bet placement to include user ID
+    if st.button("Place Bet"):
+        bet = {
+            'user_id': st.session_state['user'].id,
+            'date': selected_game['Date'],
+            'home_team': home_team,
+            'away_team': away_team,
+            'chosen_team': team_choice.split(" (")[0],
+            'odds': home_odds if 'Home' in team_choice else away_odds,
+            'stake': stake,
+            'payout': stake * (home_odds if 'Home' in team_choice else away_odds)
+        }
+        # st.write(bet)
+        # Insert bet into Supabase
+        supabase.table("bets").insert(bet).execute()
+        st.success("Bet placed successfully and stored in Supabase!")
+
+    # Display Betting History (only for the logged-in user)
+    st.header("Your Bets")
+
+    # Fetch bets from Supabase for the current user
+    bets_response = supabase.table("bets").select("*").eq("user_id", st.session_state['user'].id).execute()
+    bets = bets_response.data
+
+    if bets:
+        bets_df = pd.DataFrame(bets)
+        st.table(bets_df)
+    else:
+        st.info("You haven't placed any bets yet.")
+
+    # # Optional: Reset Bets (only for the current user)
+    # if st.button("Reset Betting History"):
+    #     supabase.table("bets").delete().eq("user_id", st.session_state['user'].id).execute()
+    #     st.success("Your betting history has been reset in Supabase.")
