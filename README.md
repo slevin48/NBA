@@ -23,3 +23,6 @@ https://basketboule.streamlit.app/ >> *NBA stats app*
 - [Excel - Create an NBA Shot Chart Using Python & Copilot](https://www.youtube.com/watch?v=HvH7t6ejCFs)
 - [How to Create NBA Shot Charts in Python](http://savvastjortjoglou.com/nba-shot-sharts.html)
 - [Plotting with Python play-by-play data of NBA Games (2015–2021)](https://medium.com/@eduardo.garcia.sv/plotting-with-python-play-by-play-data-of-nba-games-2015-2021-ed763b888514)
+- [Supabase in Streamlit](https://blog.streamlit.io/connect-your-streamlit-apps-to-supabase/)
+  - [Demo app](https://st-supabase-connection.streamlit.app/)
+  - [Repo](https://github.com/SiddhantSadangi/st_supabase_connection)
