@@ -56,7 +56,7 @@ else:
     # Select a Game to Bet On
     st.subheader("Place a Bet")
 
-    game_id = st.selectbox("Select Game", games['Game ID'])
+    game_id = st.selectbox("Select Game", games['Game ID'], format_func=lambda x: f"{games[games['Game ID'] == x]['Home Team'].iloc[0]} vs {games[games['Game ID'] == x]['Away Team'].iloc[0]}")
 
     selected_game = games[games['Game ID'] == game_id].iloc[0]
     home_team = selected_game['Home Team']
