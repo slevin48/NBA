@@ -2,25 +2,30 @@
 
 import streamlit as st
 import pandas as pd
+from nba_api.live.nba.endpoints import scoreboard
 from datetime import datetime
 
-# Sample NBA games data
-def get_mock_games():
-    data = {
-        'Game ID': [1, 2, 3, 4, 5],
-        'Date': [
-            '2023-11-01',
-            '2023-11-02',
-            '2023-11-03',
-            '2023-11-04',
-            '2023-11-05'
-        ],
-        'Home Team': ['Lakers', 'Warriors', 'Nets', 'Bucks', 'Celtics'],
-        'Away Team': ['Heat', 'Nuggets', 'Knicks', 'Thunder', 'Pacers'],
-        'Home Odds': [1.8, 2.0, 1.5, 1.9, 1.7],
-        'Away Odds': [2.0, 1.9, 2.2, 2.0, 2.1]
-    }
-    return pd.DataFrame(data)
+# Fetch today's NBA games
+def get_today_games():
+    today = datetime.now().date()
+    date_str = today.strftime("%Y-%m-%d")
+    
+    board = scoreboard.ScoreBoard()
+    games_today = board.games.get_dict()
+    
+    games = []
+    for game in games_today:
+        game_info = {
+            'Game ID': game['gameId'],
+            'Date': date_str,
+            'Home Team': game['homeTeam']['teamName'],
+            'Away Team': game['awayTeam']['teamName'],
+            'Home Odds': 2.0,  # Placeholder odds
+            'Away Odds': 2.0,  # Placeholder odds
+        }
+        games.append(game_info)
+    
+    return pd.DataFrame(games)
 
 # Initialize session state for bets
 if 'bets' not in st.session_state:
@@ -29,47 +34,55 @@ if 'bets' not in st.session_state:
 # App Title
 st.title("🏀 NBA Betting App")
 
-# Display Upcoming Games
-st.header("Upcoming NBA Matches")
+# Display Today's Games
+st.header("Today's NBA Matches")
 
-games = get_mock_games()
-st.write(games[['Date', 'Home Team', 'Away Team', 'Home Odds', 'Away Odds']].rename(columns={
-    'Home Team': 'Home Team',
-    'Away Team': 'Away Team',
-    'Home Odds': 'Home Team Odds',
-    'Away Odds': 'Away Team Odds'
-}))
+@st.cache_data(ttl=3600)  # Cache data for 1 hour
+def load_games():
+    return get_today_games()
 
-# Select a Game to Bet On
-st.subheader("Place a Bet")
+games = load_games()
 
-game_id = st.selectbox("Select Game", games['Game ID'])
+if games.empty:
+    st.info("There are no NBA games scheduled for today.")
+else:
+    st.write(games[['Date', 'Home Team', 'Away Team', 'Home Odds', 'Away Odds']].rename(columns={
+        'Home Team': 'Home Team',
+        'Away Team': 'Away Team',
+        'Home Odds': 'Home Team Odds',
+        'Away Odds': 'Away Team Odds'
+    }))
 
-selected_game = games[games['Game ID'] == game_id].iloc[0]
-home_team = selected_game['Home Team']
-away_team = selected_game['Away Team']
-home_odds = selected_game['Home Odds']
-away_odds = selected_game['Away Odds']
+    # Select a Game to Bet On
+    st.subheader("Place a Bet")
 
-stake = st.number_input("Enter your stake ($)", min_value=1.0, step=1.0)
+    game_id = st.selectbox("Select Game", games['Game ID'])
 
-team_choice = st.radio(
-    "Choose a team to bet on:",
-    (f"{home_team} (Odds: {home_odds})", f"{away_team} (Odds: {away_odds})")
-)
+    selected_game = games[games['Game ID'] == game_id].iloc[0]
+    home_team = selected_game['Home Team']
+    away_team = selected_game['Away Team']
+    home_odds = selected_game['Home Odds']
+    away_odds = selected_game['Away Odds']
 
-if st.button("Place Bet"):
-    bet = {
-        'Date': selected_game['Date'],
-        'Home Team': home_team,
-        'Away Team': away_team,
-        'Chosen Team': team_choice.split(" (")[0],
-        'Odds': home_odds if 'Home' in team_choice else away_odds,
-        'Stake': stake,
-        'Potential Payout': stake * (home_odds if 'Home' in team_choice else away_odds)
-    }
-    st.session_state['bets'].append(bet)
-    st.success("Bet placed successfully!")
+    stake = st.number_input("Enter your stake ($)", min_value=1.0, step=1.0)
+
+    team_choice = st.radio(
+        "Choose a team to bet on:",
+        (f"{home_team} (Odds: {home_odds})", f"{away_team} (Odds: {away_odds})")
+    )
+
+    if st.button("Place Bet"):
+        bet = {
+            'Date': selected_game['Date'],
+            'Home Team': home_team,
+            'Away Team': away_team,
+            'Chosen Team': team_choice.split(" (")[0],
+            'Odds': home_odds if 'Home' in team_choice else away_odds,
+            'Stake': stake,
+            'Potential Payout': stake * (home_odds if 'Home' in team_choice else away_odds)
+        }
+        st.session_state['bets'].append(bet)
+        st.success("Bet placed successfully!")
 
 # Display Betting History
 st.header("Your Bets")
@@ -84,4 +97,3 @@ else:
 if st.button("Reset Betting History"):
     st.session_state['bets'] = []
     st.success("Betting history has been reset.")
-
