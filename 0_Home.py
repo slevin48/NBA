@@ -55,7 +55,7 @@ games = get_today_games()
 # App Title
 st.title("🏀 NBA Betting App 🤑")
 
-
+st.write("Games of the day")
 if games.empty:
     st.info("There are no NBA games scheduled for today.")
 else:
@@ -111,87 +111,43 @@ else:
 
 # User Authentication Section
 if st.session_state['user'] is None:
-    st.header("User Authentication")
-
-    auth_operation = st.selectbox('Operation',
-                                  ["sign_up", "sign_in_with_password", "sign_in_with_otp"])
-
-    constructed_auth_query = ""
-
-    if auth_operation == "sign_up":
-        st.write("## Create user")
-        lcol, rcol = st.columns(2)
-        email = lcol.text_input(label="Enter your email ID")
-        password = rcol.text_input(
+    st.write("<< Login in the sidebar to place a bet 💰")
+    st.write("To get early access to the Basketboule betting app, email slevin.an209@gadz.org")
+    with st.sidebar.form("Sign in"):
+        st.write("**Log in**")
+        # st.write("## Sign in")
+        email = st.text_input(label="Enter your email ID")
+        password = st.text_input(
             label="Enter your password",
             placeholder="Min 6 characters",
             type="password",
             help="Password is encrypted",
         )
 
-        fname = lcol.text_input(
-            label="First name",
-            placeholder="Optional",
-        )
-
-        attribution = rcol.text_area(
-            label="How did you hear about us?",
-            placeholder="Optional",
-        )
-
-        constructed_auth_query = f"supabase.auth.{auth_operation}(dict({email=}, {password=}, options=dict(data=dict({fname=},{attribution=}))))"
-
-    elif auth_operation == "sign_in_with_password":
-        st.write("## Sign in")
-        lcol, rcol = st.columns(2)
-        email = lcol.text_input(label="Enter your email ID")
-        password = rcol.text_input(
-            label="Enter your password",
-            placeholder="Min 6 characters",
-            type="password",
-            help="Password is encrypted",
-        )
-
-        constructed_auth_query = f"supabase.auth.{auth_operation}(dict({email=}, {password=}))"
-
-    elif auth_operation == "sign_in_with_otp":
-        st.write("## Create user with OTP")
-        st.info("User creation not available for `sign_in_with_otp()` due to technical constraints.")
-        # if email := st.text_input(label="Enter your email ID"):
-        #     supabase.auth.sign_in_with_otp(dict(email=email))
-        # token = st.text_input("Enter OTP", type="password")
-
-    if st.button('Execute 🪄',
-                key="run_auth_query",
-                disabled=not constructed_auth_query):
-        try:
-            response = eval(constructed_auth_query)
-
-            if auth_operation == "sign_up":
-                auth_success_message = f"User created. Welcome {fname or ''} 🚀"
-            elif auth_operation == "sign_in_with_password":
+        constructed_auth_query = f"supabase.auth.sign_in_with_password(dict({email=}, {password=}))"
+        if st.form_submit_button('Execute 🪄'):
+            try:
+                response = eval(constructed_auth_query)
                 auth_success_message = f"""Logged in. Welcome 🔓"""
                 st.session_state['user'] = response.user
-            
-            if auth_success_message:
-                st.success(auth_success_message)
 
-            if response is not None:
-                with st.expander("JSON response"):
-                    st.write(response.dict())
+                # if response is not None:
+                #     with st.expander("JSON response"):
+                #         st.write(response.dict())
 
-            if st.session_state['user']:
-                st.rerun()
+                if st.session_state['user']:
+                    st.rerun()
 
-        except Exception as e:
-            st.error(str(e), icon="❌")
+            except Exception as e:
+                st.error(str(e), icon="❌")
 
 else:
-    st.write(f"Welcome, {st.session_state['user'].email}!")
-    if st.button("Logout"):
-        supabase.auth.sign_out()
-        st.session_state['user'] = None
-        st.rerun()
+    with st.sidebar:
+        st.write(f"Welcome, {st.session_state['user'].email}!")
+        if st.button("Logout"):
+            supabase.auth.sign_out()
+            st.session_state['user'] = None
+            st.rerun()
 
     # Select a Game to Bet On
     st.subheader("Place a Bet")

@@ -7,7 +7,7 @@ import plotly.express as px
 from datetime import datetime
 
 st.set_page_config(
-    page_title="NBA Teams", 
+    page_title="NBA Teams 👥", 
     layout="wide",
     page_icon="🏀"
 )

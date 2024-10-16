@@ -9,7 +9,7 @@ st.set_page_config(
     page_icon="🏀")
 
 def show_players():
-    st.title("NBA Players")
+    st.title("NBA Players 🏃")
     all_players = players.get_active_players()
     player_names = [f"{player['first_name']} {player['last_name']}" for player in all_players]
     selected_player = st.selectbox("Select a player", player_names)
