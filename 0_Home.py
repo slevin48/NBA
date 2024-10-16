@@ -113,54 +113,55 @@ else:
 if st.session_state['user'] is None:
     st.header("User Authentication")
 
-    auth_operation = st.selectbox('Operation',
-                                  ["sign_up", "sign_in_with_password", "sign_in_with_otp"])
-
+    tab1, tab2 = st.tabs(["Sign up", "Log in"]) # TODO: add "sign_in_with_otp"
     constructed_auth_query = ""
 
-    if auth_operation == "sign_up":
-        st.write("## Create user")
-        lcol, rcol = st.columns(2)
-        email = lcol.text_input(label="Enter your email ID")
-        password = rcol.text_input(
-            label="Enter your password",
+    with tab1:
+        auth_operation = "sign_up"
+        # st.write("## Create user")
+        lcol1, rcol1 = st.columns(2)
+        email1 = lcol1.text_input(label="Sign up with your email ID")
+        password1 = rcol1.text_input(
+            label="Sign up with your password",
             placeholder="Min 6 characters",
             type="password",
             help="Password is encrypted",
         )
 
-        fname = lcol.text_input(
+        fname = lcol1.text_input(
             label="First name",
             placeholder="Optional",
         )
 
-        attribution = rcol.text_area(
+        attribution = rcol1.text_area(
             label="How did you hear about us?",
             placeholder="Optional",
         )
 
-        constructed_auth_query = f"supabase.auth.{auth_operation}(dict({email=}, {password=}, options=dict(data=dict({fname=},{attribution=}))))"
+        constructed_auth_query = f"supabase.auth.{auth_operation}(dict({email1=}, {password1=}, options=dict(data=dict({fname=},{attribution=}))))"
 
-    elif auth_operation == "sign_in_with_password":
-        st.write("## Sign in")
-        lcol, rcol = st.columns(2)
-        email = lcol.text_input(label="Enter your email ID")
-        password = rcol.text_input(
-            label="Enter your password",
+    with tab2:
+        auth_operation = "sign_in_with_password"
+        # st.write("## Log in")
+        lcol2, rcol2 = st.columns(2)
+        email2 = lcol2.text_input(label="Login with your email ID")
+        password2 = rcol2.text_input(
+            label="Login with your password",
             placeholder="Min 6 characters",
             type="password",
             help="Password is encrypted",
         )
 
-        constructed_auth_query = f"supabase.auth.{auth_operation}(dict({email=}, {password=}))"
+        constructed_auth_query = f"supabase.auth.{auth_operation}(dict({email2=}, {password2=}))"
 
-    elif auth_operation == "sign_in_with_otp":
-        st.write("## Create user with OTP")
-        st.info("User creation not available for `sign_in_with_otp()` due to technical constraints.")
+        # auth_operation == "sign_in_with_otp":
+        # st.write("## Create user with OTP")
+        # st.info("User creation not available for `sign_in_with_otp()` due to technical constraints.")
         # if email := st.text_input(label="Enter your email ID"):
         #     supabase.auth.sign_in_with_otp(dict(email=email))
         # token = st.text_input("Enter OTP", type="password")
 
+    st.sidebar.write(constructed_auth_query)
     if st.button('Execute 🪄',
                 key="run_auth_query",
                 disabled=not constructed_auth_query):
