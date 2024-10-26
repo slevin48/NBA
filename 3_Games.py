@@ -1,5 +1,6 @@
 import streamlit as st
 from nba_api.live.nba.endpoints import scoreboard
+from nba_api.stats.endpoints import leaguegamefinder
 from datetime import date
 import time
 
@@ -12,10 +13,10 @@ st.set_page_config(
     }
 )
 
-
 # Define the function to get the game for the selected date
-def get_game_for_date(selected_date, max_retries=3):
-    for _ in range(max_retries):
+def get_game_for_date(selected_date):
+    # If today, get games from the scoreboard
+    if selected_date == date.today():
         try:
             # Convert selected_date to the required format
             formatted_date = selected_date.strftime('%m/%d/%Y')
@@ -32,7 +33,10 @@ def get_game_for_date(selected_date, max_retries=3):
         except Exception as e:
             st.sidebar.warning(f"Error fetching data: {e}. Retrying...")
             time.sleep(1)  # Wait for 1 second before retrying
-    
+    else:
+        league_game_finder = leaguegamefinder.LeagueGameFinder(league_id_nullable='00', season_nullable='2024-25')
+        games = league_game_finder.get_data_frames()[0]
+        return games, selected_date.strftime('%B %d, %Y')
     return None, None
 
 def display_fallback_content():
@@ -45,12 +49,11 @@ def display_fallback_content():
 
 # Main content
 st.title("NBA Games 🏀")
-st.write("This app provides information about NBA teams and players.")
-st.write("Use the sidebar to navigate between the Teams and Players sections.")
 
 # Add calendar to sidebar
-st.sidebar.subheader("Select Date")
-selected_date = st.sidebar.date_input("Choose a date", value=date.today())
+# st.sidebar.subheader("Select Date")
+# selected_date = st.sidebar.date_input("Choose a date", value=date.today())
+selected_date = date.today()
 
 st.subheader(f"Games for {selected_date.strftime('%B %d, %Y')}")
 games, game_date = get_game_for_date(selected_date)
@@ -66,9 +69,7 @@ if games is not None:
                 st.write(f"Score: {game['homeTeam']['score']}")
             
             with col2:
-                st.write("VS")
-                game_status = game['gameStatus']
-                st.write(f"Status: {game_status}")
+                st.markdown("# VS")
             
             with col3:
                 st.image(f"https://cdn.nba.com/logos/nba/{game['awayTeam']['teamId']}/global/L/logo.svg", width=100)
@@ -76,7 +77,8 @@ if games is not None:
                 st.write(f"Score: {game['awayTeam']['score']}")
             
             game_url = f"https://www.nba.com/game/{game['gameId']}"
-            st.markdown(f"[View game details on NBA.com]({game_url})")
+            game_status = game['gameStatus']
+            st.write(f"Status: {game_status}",f" - [View game details on NBA.com]({game_url})")
             
             st.write("---")  # Add a separator between games
     else:
@@ -84,9 +86,3 @@ if games is not None:
 else:
     st.error("Unable to fetch game data. Displaying fallback content.")
     display_fallback_content()
-
-st.subheader("Features")
-st.write("- View detailed information about NBA teams")
-st.write("- Explore current season stats for teams")
-st.write("- Check out player rosters and individual stats")
-st.write("- Analyze historical team performance")
