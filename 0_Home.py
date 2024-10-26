@@ -16,6 +16,14 @@ st.set_page_config(
 # Initialize Supabase connection
 supabase = st.connection("supabase", type=SupabaseConnection)
 
+# Functions
+
+def calculate_win_probability(elo_a, elo_b):
+    return 1 / (1 + 10 ** ((elo_b - elo_a) / 400))
+
+def probability_to_odds(probability):
+    return 1 / probability
+
 # Fetch today's NBA games
 
 # @st.cache_data(ttl=3600)  # Cache data for 1 hour
@@ -23,11 +31,23 @@ def get_today_games():
     today = datetime.now().date()
     date_str = today.strftime("%Y-%m-%d")
     
+    # Load ELO ratings
+    elo_df = pd.read_csv('elo-2023-24.csv')
+    elo_dict = dict(zip(elo_df['Team'], elo_df['Elo']))
+    
     board = scoreboard.ScoreBoard()
     games_today = board.games.get_dict()
     
     games = []
     for game in games_today:
+        home_team = game['homeTeam']['teamName']
+        away_team = game['awayTeam']['teamName']
+        
+        home_elo = elo_dict.get(home_team, 1500)  # Default ELO if not found
+        away_elo = elo_dict.get(away_team, 1500)  # Default ELO if not found
+        
+        home_win_prob = round(calculate_win_probability(home_elo, away_elo), 2)
+        away_win_prob = round(1 - home_win_prob, 2)
         game_info = {
             'Game ID': game['gameId'],
             'Date': date_str,
@@ -35,8 +55,8 @@ def get_today_games():
             'Away Team': game['awayTeam']['teamName'],
             'Home Team ID': str(game['homeTeam']['teamId']),
             'Away Team ID': str(game['awayTeam']['teamId']),
-            'Home Odds': 2.0,  # Placeholder odds
-            'Away Odds': 2.0,  # Placeholder odds
+            'Home Odds': probability_to_odds(home_win_prob),
+            'Away Odds': probability_to_odds(away_win_prob)
         }
         games.append(game_info)
     
@@ -53,7 +73,8 @@ if 'user' not in st.session_state:
 games = get_today_games()
 
 # App Title
-st.title("🏀 NBA Betting App 🤑")
+st.title("Basketboule")
+st.subheader("Big Bets bring Big Bucks 🤑")
 
 st.write("Games of the day")
 if games.empty:
@@ -87,12 +108,12 @@ else:
             width="small",
         ),
         "Home Odds": st.column_config.NumberColumn(
-            "Home Team Odds",
+            "Home Odds",
             help="Odds for the home team",
             format="%.2f",
         ),
         "Away Odds": st.column_config.NumberColumn(
-            "Away Team Odds",
+            "Away Odds",
             help="Odds for the away team",
             format="%.2f",
         ),
@@ -124,10 +145,9 @@ if st.session_state['user'] is None:
             help="Password is encrypted",
         )
 
-        constructed_auth_query = f"supabase.auth.sign_in_with_password(dict({email=}, {password=}))"
-        if st.form_submit_button('Execute 🪄'):
+        if st.form_submit_button('Login 🪄'):
             try:
-                response = eval(constructed_auth_query)
+                response = supabase.auth.sign_in_with_password(dict(email=email, password=password))
                 auth_success_message = f"""Logged in. Welcome 🔓"""
                 st.session_state['user'] = response.user
 
@@ -152,37 +172,40 @@ else:
     # Select a Game to Bet On
     st.subheader("Place a Bet")
 
-    game_id = st.selectbox("Select Game", games['Game ID'], format_func=lambda x: f"{games[games['Game ID'] == x]['Home Team'].iloc[0]} vs {games[games['Game ID'] == x]['Away Team'].iloc[0]}")
+    if games.empty:
+        st.write("No betting opportunities today.")
+    else:
+        game_id = st.selectbox("Select Game", games['Game ID'], format_func=lambda x: f"{games[games['Game ID'] == x]['Home Team'].iloc[0]} vs {games[games['Game ID'] == x]['Away Team'].iloc[0]}")
 
-    selected_game = games[games['Game ID'] == game_id].iloc[0]
-    home_team = selected_game['Home Team']
-    away_team = selected_game['Away Team']
-    home_odds = selected_game['Home Odds']
-    away_odds = selected_game['Away Odds']
+        selected_game = games[games['Game ID'] == game_id].iloc[0]
+        home_team = selected_game['Home Team']
+        away_team = selected_game['Away Team']
+        home_odds = selected_game['Home Odds']
+        away_odds = selected_game['Away Odds']
 
-    stake = st.number_input("Enter your stake ($)", min_value=1.0, step=1.0)
+        stake = st.number_input("Enter your stake ($)", min_value=1.0, step=1.0)
 
-    team_choice = st.radio(
-        "Choose a team to bet on:",
-        (f"{home_team} (Odds: {home_odds})", f"{away_team} (Odds: {away_odds})")
-    )
+        team_choice = st.radio(
+            "Choose a team to bet on:",
+            (f"{home_team} (Odds: {home_odds:.2f})", f"{away_team} (Odds: {away_odds:.2f})")
+        )
 
-    # Modify the bet placement to include user ID
-    if st.button("Place Bet"):
-        bet = {
-            'user_id': st.session_state['user'].id,
-            'date': selected_game['Date'],
-            'home_team': home_team,
-            'away_team': away_team,
-            'chosen_team': team_choice.split(" (")[0],
-            'odds': home_odds if 'Home' in team_choice else away_odds,
-            'stake': stake,
-            'payout': stake * (home_odds if 'Home' in team_choice else away_odds)
-        }
-        # st.write(bet)
-        # Insert bet into Supabase
-        supabase.table("bets").insert(bet).execute()
-        st.success("Bet placed successfully and stored in Supabase!")
+        # Modify the bet placement to include user ID
+        if st.button("Place Bet"):
+            bet = {
+                'user_id': st.session_state['user'].id,
+                'date': selected_game['Date'],
+                'home_team': home_team,
+                'away_team': away_team,
+                'chosen_team': team_choice.split(" (")[0],
+                'odds': home_odds if 'Home' in team_choice else away_odds,
+                'stake': stake,
+                'payout': stake * (home_odds if 'Home' in team_choice else away_odds)
+            }
+            # st.write(bet)
+            # Insert bet into Supabase
+            supabase.table("bets").insert(bet).execute()
+            st.success("Bet placed successfully and stored in Supabase!")
 
     # Display Betting History (only for the logged-in user)
     st.header("Your Bets")
@@ -193,7 +216,12 @@ else:
 
     if bets:
         bets_df = pd.DataFrame(bets)
-        st.table(bets_df)
+        bets_df['date'] = pd.to_datetime(bets_df['date']).dt.strftime('%Y-%m-%d')
+        bets_df = bets_df.drop(columns=['id', 'created_at', 'user_id'])
+        st.dataframe(bets_df)
+        # Summarize gains for the user
+        total_gains = bets_df['payout'].sum()
+        st.metric("Total Gains", f"${total_gains:.2f}")
     else:
         st.info("You haven't placed any bets yet.")
 

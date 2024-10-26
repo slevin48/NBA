@@ -13,7 +13,7 @@ st.set_page_config(
 )
 
 def show_teams():
-    st.title("NBA Teams")
+    st.title("NBA Teams 👥")
     
     all_teams = teams.get_teams()
     team_names = [team['full_name'] for team in all_teams]
