@@ -4,6 +4,9 @@
  
 https://basketboule.streamlit.app/ >> *NBA stats app*
 
+## V0.5
+[streamlit-streamlit_app-2024-10-26-18-10-84.webm](https://github.com/user-attachments/assets/86abcb61-0ee4-4edf-8fad-271b8a797ea9)
+
 ## V0.4
 [streamlit-streamlit_app-2024-10-14-23-10-34.webm](https://github.com/user-attachments/assets/8670ec16-0f2d-4883-a440-66843371c5b1)
 
