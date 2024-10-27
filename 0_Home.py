@@ -1,7 +1,7 @@
 from st_supabase_connection import SupabaseConnection
 import streamlit as st
 import pandas as pd
-from utils import calculate_win_probability, probability_to_odds, get_live_games, get_past_games, get_game
+from utils import calculate_win_probability, probability_to_odds, get_live_games, get_game_by_id
 from datetime import datetime
 
 st.set_page_config(
@@ -224,7 +224,7 @@ else:
         # Compute results for each bet
         results = []
         for _, bet in bets_df.iterrows():
-            game_result = get_game(bet['game_id'])
+            game_result = get_game_by_id(bet['game_id'])
             if game_result is not None and not game_result.empty:
                 game_result = game_result.iloc[0]
                 home_score = game_result['homeTeamScore']

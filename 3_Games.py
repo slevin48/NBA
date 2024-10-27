@@ -1,5 +1,5 @@
 import streamlit as st
-from utils import get_live_games, get_past_games
+from utils import get_live_games, get_game_by_date
 from datetime import date
 
 st.set_page_config(
@@ -16,7 +16,7 @@ def get_game_for_date(selected_date):
     if selected_date == date.today():
         return get_live_games()  
     else:
-        return get_past_games(selected_date)
+        return get_game_by_date(selected_date)
 
 def display_fallback_content():
     st.write("We're currently unable to fetch game data. Here's some general NBA information:")
