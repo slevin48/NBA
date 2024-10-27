@@ -1,7 +1,7 @@
 from st_supabase_connection import SupabaseConnection
 import streamlit as st
 import pandas as pd
-from utils import get_live_games, calculate_win_probability, probability_to_odds
+from utils import calculate_win_probability, probability_to_odds, get_live_games, get_past_games, get_game
 from datetime import datetime
 
 st.set_page_config(
@@ -197,6 +197,7 @@ else:
             bet = {
                 'user_id': st.session_state['user'].id,
                 'date': datetime.now().strftime('%Y-%m-%d'),
+                'game_id': game_id,
                 'home_team': home_team,
                 'away_team': away_team,
                 'chosen_team': chosen_team,
@@ -219,11 +220,51 @@ else:
     if bets:
         bets_df = pd.DataFrame(bets)
         bets_df['date'] = pd.to_datetime(bets_df['date']).dt.strftime('%Y-%m-%d')
-        bets_df = bets_df.drop(columns=['id', 'created_at', 'user_id'])
-        st.dataframe(bets_df)
+        
+        # Compute results for each bet
+        results = []
+        for _, bet in bets_df.iterrows():
+            game_result = get_game(bet['game_id'])
+            if game_result is not None and not game_result.empty:
+                game_result = game_result.iloc[0]
+                home_score = game_result['homeTeamScore']
+                away_score = game_result['awayTeamScore']
+                winner = bet['home_team'] if home_score > away_score else bet['away_team']
+                
+                if bet['chosen_team'] == winner:
+                    results.append({
+                        'result': 'Win',
+                        'payout': bet['stake'] * bet['odds']
+                    })
+                else:
+                    results.append({
+                        'result': 'Loss',
+                        'payout': 0
+                    })
+            else:
+                results.append({
+                    'result': 'Pending',
+                    'payout': 0
+                })
+        
+        # Add results to dataframe
+        results_df = pd.DataFrame(results)
+        bets_df['result'] = results_df['result']
+        bets_df['actual_payout'] = results_df['payout']
+        
+        # Display betting history
+        display_cols = ['date', 'home_team', 'away_team', 'chosen_team', 'odds', 'stake', 'result', 'actual_payout']
+        st.dataframe(bets_df[display_cols])
+        
         # Summarize gains for the user
-        total_gains = bets_df['payout'].sum()
-        st.metric("Total Gains", f"${total_gains:.2f}")
+        total_stake = bets_df['stake'].sum()
+        total_payout = bets_df['actual_payout'].sum()
+        net_profit = total_payout - total_stake
+        
+        col1, col2, col3 = st.columns(3)
+        col1.metric("Total Stake", f"${total_stake:.2f}")
+        col2.metric("Total Payout", f"${total_payout:.2f}")
+        col3.metric("Net Profit", f"${net_profit:.2f}", f"ROI: {(net_profit/total_stake*100):.1f}%")
     else:
         st.info("You haven't placed any bets yet.")
 

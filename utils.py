@@ -36,6 +36,68 @@ def get_live_games():
     return df_filtered
 
 
+def get_game(game_id):
+    """Get a single game by ID and format it like get_past_games output"""
+    # Fetch the data
+    game_finder = leaguegamefinder.LeagueGameFinder(game_id_nullable=game_id)
+    games = game_finder.get_data_frames()[0]
+
+    # Function to get the team nickname
+    def get_team_nickname(full_name):
+        return full_name.split()[-1]
+
+    # Create separate dataframes for home and away teams
+    home_games = games[games['MATCHUP'].str.contains('vs.')].copy()
+    away_games = games[games['MATCHUP'].str.contains('@')].copy()
+
+    # Rename columns and extract team nicknames
+    home_games = home_games.rename(columns={
+        'TEAM_ID': 'homeTeamId',
+        'TEAM_NAME': 'homeTeamName',
+        'PTS': 'homeTeamScore'
+    })
+    home_games['homeTeamName'] = home_games['homeTeamName'].apply(get_team_nickname)
+
+    away_games = away_games.rename(columns={
+        'TEAM_ID': 'awayTeamId',
+        'TEAM_NAME': 'awayTeamName',
+        'PTS': 'awayTeamScore'
+    })
+    away_games['awayTeamName'] = away_games['awayTeamName'].apply(get_team_nickname)
+
+    # Merge home and away games
+    merged_games = pd.merge(
+        home_games[['GAME_ID', 'GAME_DATE', 'homeTeamId', 'homeTeamName', 'homeTeamScore']],
+        away_games[['GAME_ID', 'awayTeamId', 'awayTeamName', 'awayTeamScore']],
+        on='GAME_ID'
+    )
+
+    # Determine the winning team
+    merged_games['winningTeam'] = np.where(
+        merged_games['homeTeamScore'] > merged_games['awayTeamScore'],
+        merged_games['homeTeamName'],
+        merged_games['awayTeamName']
+    )
+
+    # Rename remaining columns
+    final_df = merged_games.rename(columns={
+        'GAME_ID': 'gameId',
+        'GAME_DATE': 'gameDate'
+    })
+
+    # Add gameStatusText
+    final_df['gameStatusText'] = 'Final'
+
+    # Reorder columns to match get_past_games output
+    final_df = final_df[[
+        'gameId', 'gameStatusText', 'gameDate',
+        'homeTeamId', 'homeTeamName', 'homeTeamScore',
+        'awayTeamId', 'awayTeamName', 'awayTeamScore',
+        'winningTeam'
+    ]]
+
+    return final_df
+
 def get_past_games(selected_date):
         
     # Fetch the data
