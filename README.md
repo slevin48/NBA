@@ -4,6 +4,14 @@
  
 https://basketboule.streamlit.app/ >> *NBA stats app*
 
+## V0.6
+Converge on a game table format for live and past games:
+- gameId
+- game date (EST)
+- homeTeam teamId and teamName and score
+- awayTeam teamId and teamName and score
+- winningTeam
+
 ## V0.5
 [streamlit-streamlit_app-2024-10-26-18-10-84.webm](https://github.com/user-attachments/assets/86abcb61-0ee4-4edf-8fad-271b8a797ea9)
 

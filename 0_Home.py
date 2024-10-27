@@ -1,8 +1,7 @@
 from st_supabase_connection import SupabaseConnection
 import streamlit as st
 import pandas as pd
-from nba_api.live.nba.endpoints import scoreboard
-from datetime import datetime
+from utils import get_live_games, calculate_win_probability, probability_to_odds
 
 st.set_page_config(
     page_title="Basketboule",
@@ -16,32 +15,21 @@ st.set_page_config(
 # Initialize Supabase connection
 supabase = st.connection("supabase", type=SupabaseConnection)
 
-# Functions
-
-def calculate_win_probability(elo_a, elo_b):
-    return 1 / (1 + 10 ** ((elo_b - elo_a) / 400))
-
-def probability_to_odds(probability):
-    return 1 / probability
-
 # Fetch today's NBA games
 
 # @st.cache_data(ttl=3600)  # Cache data for 1 hour
-def get_today_games():
-    today = datetime.now().date()
-    date_str = today.strftime("%Y-%m-%d")
+def format_games():
     
     # Load ELO ratings
     elo_df = pd.read_csv('elo-2023-24.csv')
     elo_dict = dict(zip(elo_df['Team'], elo_df['Elo']))
     
-    board = scoreboard.ScoreBoard()
-    games_today = board.games.get_dict()
+    last_games = get_live_games()
     
     games = []
-    for game in games_today:
-        home_team = game['homeTeam']['teamName']
-        away_team = game['awayTeam']['teamName']
+    for _, game in last_games.iterrows():
+        home_team = game['homeTeamName']
+        away_team = game['awayTeamName']
         
         home_elo = elo_dict.get(home_team, 1500)  # Default ELO if not found
         away_elo = elo_dict.get(away_team, 1500)  # Default ELO if not found
@@ -50,13 +38,13 @@ def get_today_games():
         away_win_prob = round(1 - home_win_prob, 2)
         game_info = {
             'Game ID': game['gameId'],
-            'Date': date_str,
-            'Home Team': game['homeTeam']['teamName'],
-            'Away Team': game['awayTeam']['teamName'],
-            'Home Team ID': str(game['homeTeam']['teamId']),
-            'Away Team ID': str(game['awayTeam']['teamId']),
+            'Home Team': game['homeTeamName'],
+            'Away Team': game['awayTeamName'],
+            'Home Team ID': str(game['homeTeamId']),
+            'Away Team ID': str(game['awayTeamId']),
             'Home Odds': probability_to_odds(home_win_prob),
-            'Away Odds': probability_to_odds(away_win_prob)
+            'Away Odds': probability_to_odds(away_win_prob),
+            'Status': game['gameStatusText']
         }
         games.append(game_info)
     
@@ -70,11 +58,12 @@ if 'bets' not in st.session_state:
 if 'user' not in st.session_state:
     st.session_state['user'] = None
 
-games = get_today_games()
+games = format_games()
 
 # App Title
 st.title("Basketboule")
-st.subheader("Big Bets bring Big Bucks 🤑")
+st.sidebar.subheader("Big Bets bring Big Bucks 🤑")
+st.subheader("NBA Betting Simulator")
 
 st.write("Games of the day")
 if games.empty:
@@ -82,11 +71,6 @@ if games.empty:
 else:
     # Define column configuration
     column_config = {
-        "Date": st.column_config.DateColumn(
-            "Date",
-            help="Date",
-            width="small",
-        ),
         "Home Logo": st.column_config.ImageColumn(
             "Home Team",
             help="Home Logo",
@@ -117,15 +101,28 @@ else:
             help="Odds for the away team",
             format="%.2f",
         ),
+        "Status": st.column_config.TextColumn(
+            "Status",
+            help="Status of the game",
+            width="small",
+        ),
+        "Game Link": st.column_config.LinkColumn(
+            "NBA Game",
+            help="Link to NBA game",
+            width="small",
+            display_text="Watch 🏀"  # This will be the text shown for all links
+        ),
     }
 
-    # Prepare the dataframe with logo URLs
+    # Prepare the dataframe with logo URLs and game links
     display_df = games.copy()
     display_df['Home Logo'] = display_df.apply(lambda row: f"https://cdn.nba.com/logos/nba/{row['Home Team ID']}/global/L/logo.svg", axis=1)
     display_df['Away Logo'] = display_df.apply(lambda row: f"https://cdn.nba.com/logos/nba/{row['Away Team ID']}/global/L/logo.svg", axis=1)
+    display_df['Game Link'] = display_df.apply(lambda row: f"https://www.nba.com/game/{row['Game ID']}", axis=1)
+    
     # Display the dataframe
     st.dataframe(
-        display_df[['Date', 'Home Logo', 'Away Logo', 'Home Team', 'Away Team', 'Home Odds', 'Away Odds']],
+        display_df[['Home Logo', 'Away Logo', 'Home Team', 'Away Team', 'Home Odds', 'Away Odds', 'Status', 'Game Link']],
         column_config=column_config,
         hide_index=True,
     )
