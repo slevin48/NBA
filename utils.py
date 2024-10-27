@@ -30,7 +30,7 @@ def get_live_games():
     )
     
     # Extract the date from gameEt and rename it gameDate
-    df_filtered['gameEt'] = pd.to_datetime(df_filtered['gameEt']).dt.date
+    df_filtered['gameEt'] = pd.to_datetime(df_filtered['gameEt'])
     df_filtered.rename(columns={'gameEt': 'gameDate'}, inplace=True)
 
     return df_filtered
