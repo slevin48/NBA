@@ -2,6 +2,7 @@ from st_supabase_connection import SupabaseConnection
 import streamlit as st
 import pandas as pd
 from utils import get_live_games, calculate_win_probability, probability_to_odds
+from datetime import datetime
 
 st.set_page_config(
     page_title="Basketboule",
@@ -187,19 +188,23 @@ else:
             (f"{home_team} (Odds: {home_odds:.2f})", f"{away_team} (Odds: {away_odds:.2f})")
         )
 
-        # Modify the bet placement to include user ID
+        # Place Bet button logic
         if st.button("Place Bet"):
+            # Determine which team was chosen and get corresponding odds
+            chosen_team = team_choice.split(" (")[0]  # Get just the team name
+            chosen_odds = float(team_choice.split("Odds: ")[1].strip(")"))  # Extract odds value
+            
             bet = {
                 'user_id': st.session_state['user'].id,
-                'date': selected_game['Date'],
+                'date': datetime.now().strftime('%Y-%m-%d'),
                 'home_team': home_team,
                 'away_team': away_team,
-                'chosen_team': team_choice.split(" (")[0],
-                'odds': home_odds if 'Home' in team_choice else away_odds,
+                'chosen_team': chosen_team,
+                'odds': chosen_odds,
                 'stake': stake,
-                'payout': stake * (home_odds if 'Home' in team_choice else away_odds)
+                'payout': stake * chosen_odds
             }
-            # st.write(bet)
+            
             # Insert bet into Supabase
             supabase.table("bets").insert(bet).execute()
             st.success("Bet placed successfully and stored in Supabase!")
